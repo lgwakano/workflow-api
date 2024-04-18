@@ -38,7 +38,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/events", eventRoutes);
 app.use("/venues", venueRoutes);
 app.use("/posts", postRoutes);
-app.use("/user", userRoutes);
+app.use("/users", userRoutes);
 
 app.listen(3001, () => {
   //TODO: port should be a env variable
