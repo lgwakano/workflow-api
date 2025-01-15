@@ -1,12 +1,13 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import { eventRoutes } from "./routes/eventRoutes";
-import { venueRoutes } from "./routes/venueRoutes";
-import { postRoutes } from "./routes/postRoutes";
-import { userRoutes } from "./routes/userRoutes";
 import session from "express-session";
 import passport from "./config/passport";
+import userRoutes from "./routes/userRoutes";
+import customerRoutes from "./routes/customerRoute";
+import jobRoutes from "./routes/jobRoute";
+import jobQuestionAnswerRoute from "./routes/jobQuestionAnswerRoute";
+import questionRoute from "./routes/questionRoute";
 
 const app = express();
 const corsOptions = require("cors");
@@ -34,11 +35,11 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-//Define Routes
-app.use("/events", eventRoutes);
-app.use("/venues", venueRoutes);
-app.use("/posts", postRoutes);
+// Define Routes
+app.use("/customers", customerRoutes);
 app.use("/users", userRoutes);
+app.use("/questions", questionRoute);
+app.use("/jobs", jobRoutes); // Centralize all job-related routes under the /jobs base path
 
 app.listen(3001, () => {
   //TODO: port should be a env variable

@@ -6,11 +6,10 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url = env("POSTGRES_PRISMA_URL") // uses connection pooling
+  provider  = "postgresql"
+  url       = env("POSTGRES_PRISMA_URL") // uses connection pooling
   directUrl = env("POSTGRES_URL_NON_POOLING") // uses a direct connection
 }
-
 
 //Commands to run the DB
 //# Publish the Model changes: 
@@ -26,60 +25,89 @@ datasource db {
 //npx prisma migrate deploy
 //TODO: include command on CI/CD;
 
+// The User model with roles for RBAC
 model User {
-  id Int @id @default(autoincrement())
-  firstName String
-  lastName String
-  email String @unique
-  password String
-  phone String?
-  role Role @default(User)
-  posts Post[]
-  uid String @unique
-}
-
-model Admin {
-  id Int @id @default(autoincrement())
-  firstName String?
-  lastName String?
-  email String @unique
-  phone String?
-  uid String @unique
-}
-
-model Event {
-  id Int @id @default(autoincrement())
-  title String
-  description String?
-  dressCode String?
-  startTime DateTime
-  endTime DateTime
-  venueId Int
-  venue Venue @relation(fields: [venueId], references: [id])
-}
-
-model Venue {
-  id Int @id @default(autoincrement())
-  title String
-  address String
-  city String
-  province String //TODO: create a Province Table for consistence
-  country String //TODO: create a Country Table for consistence
-  postalCode String
-  events Event[]
-}
-
-model Post {
-  id Int @id @default(autoincrement())
-  title String @db.VarChar(255)
-  published Boolean @default(false)
-  createAt DateTime @default(now())
-  updateAt DateTime @updatedAt //when we update the post it saves the date
-  author User? @relation(fields: [authorId], references: [id])
-  authorId Int?
+  id        Int      @id @default(autoincrement()) // Primary key
+  username  String   @unique // Unique username for authentication
+  password  String // Hashed password for login
+  role      Role     @default(User) // Role-based access control (default is "User")
+  uid       String   @unique // Unique identifier (could be used for JWT, etc.)
+  createdAt DateTime @default(now()) // When the account was created
+  updatedAt DateTime @default(now()) @updatedAt // Last time the user record was updated
 }
 
 enum Role {
-  User
-  Admin
+  User // Regular user with limited access
+  Admin // Admin with full access to the system
+  Moderator // Can moderate content or perform specific tasks
+  SuperAdmin // Highest level of access, can manage admins
+}
+
+// The Customer model with basic customer info
+model Customer {
+  id          Int    @id @default(autoincrement())
+  name        String
+  phone       String
+  email       String @unique
+  address     String
+  contactName String
+  jobs        Job[] // Link to jobs associated with the customer
+}
+
+// The Question template model for reusable questions
+model Question {
+  id         Int                   @id @default(autoincrement())
+  type       QuestionType
+  text       String
+  options    Option[] // Options for multiple-choice questions
+  linkedJobs JobQuestionTemplate[] // Jobs associated with this question template
+  answers    JobQuestionAnswer[] // Answers associated with this question template
+}
+
+// The Job model represents tasks with their customer
+model Job {
+  id                Int                   @id @default(autoincrement())
+  uuid              String                @unique
+  name              String
+  description       String
+  customerId        Int
+  customer          Customer              @relation(fields: [customerId], references: [id])
+  questionTemplates JobQuestionTemplate[] // Questions linked to this job template
+  answers           JobQuestionAnswer[] // Answers for the job
+  createdAt         DateTime              @default(now()) // Automatically set to the current time when the job is created
+  updatedAt         DateTime              @default(now()) @updatedAt // Automatically updated to the current time on each update
+}
+
+// A join table that links jobs to question templates
+model JobQuestionTemplate {
+  id         Int      @id @default(autoincrement())
+  jobId      Int // Foreign key to Job
+  job        Job      @relation(fields: [jobId], references: [id])
+  questionId Int // Foreign key to Question template
+  question   Question @relation(fields: [questionId], references: [id])
+}
+
+// JobQuestionAnswer: records the answers for each job-question pair
+model JobQuestionAnswer {
+  id         Int      @id @default(autoincrement()) // Unique ID for each answer record
+  jobId      Int // Foreign key to Job
+  questionId Int // Foreign key to Question
+  answer     String[] // The selected answer(s) (can be a single string or an array for checkboxes)
+  job        Job      @relation(fields: [jobId], references: [id])
+  question   Question @relation(fields: [questionId], references: [id])
+}
+
+// Options for multiple-choice questions
+model Option {
+  id         Int      @id @default(autoincrement())
+  text       String // Option text (e.g., "Wood", "Steel")
+  questionId Int // The ID of the related Question
+  question   Question @relation(fields: [questionId], references: [id])
+}
+
+enum QuestionType {
+  text // Text-based question
+  radio // Single-choice question (requires options)
+  checkbox // Multiple-choice question (requires options)
+  select // Drop-down select option (requires options)
 }

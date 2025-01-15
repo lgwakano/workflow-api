@@ -7,7 +7,7 @@
 ## Install
 
 ```sh
-npm dev-setup
+npm run dev-setup
 ```
 
 ## Run DB
@@ -59,9 +59,9 @@ npm run test
 ## Extra cmds
 
 ```sh
-docker build -t scheduler-api .
-docker run -p 3001:3001 scheduler-api
-docker run -it --entrypoint sh scheduler-api
+docker build -t workflow-api .
+docker run -p 3001:3001 workflow-api
+docker run -it --entrypoint sh workflow-api
 ```
 
 
