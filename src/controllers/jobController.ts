@@ -1,10 +1,41 @@
 import { Request, Response, NextFunction } from "express";
 import prisma from "../prisma/prisma";
+import handlePrismaError from "../utils/errorHandling";
+import { v4 as uuidv4 } from "uuid";
 
 // Utility function for validating ID
 const validateId = (id: string): number | null => {
   const parsedId = Number(id);
   return isNaN(parsedId) ? null : parsedId;
+};
+
+const paginateJobs = async (page: number, pageSize: number) => {
+  return prisma.job.findMany({
+    skip: (page - 1) * pageSize,
+    take: pageSize,
+    include: {
+      customer: { select: { id: true, name: true } }, // Only fetch necessary customer details
+    },
+    orderBy: { createdAt: "desc" }, // Order by latest jobs
+  });
+};
+
+const getPaginationMetadata = async (pageSize: number) => {
+  const totalJobs = await prisma.job.count(); // Fetch total jobs count
+  const totalPages = Math.ceil(totalJobs / pageSize); // Calculate total pages
+  return {
+    totalJobs,
+    totalPages,
+  };
+};
+
+const getAllJobsNoPagination = async () => {
+  return prisma.job.findMany({
+    include: {
+      customer: { select: { id: true, name: true } },
+    },
+    orderBy: { createdAt: "desc" }, // Order by latest jobs
+  });
 };
 
 // Get all jobs with pagination
@@ -14,22 +45,28 @@ const getAllJobs = async (
   next: NextFunction
 ): Promise<Response> => {
   try {
+    //return await getPaginateJobs();
+    return await getNoPaginateJobs();
+  } catch (error) {
+    console.error("Error in getAllJobs:", error);
+    next(new Error("Failed to retrieve jobs. Please try again later."));
+    return res.status(500).json({ error: "Internal server error" });
+  }
+
+  async function getNoPaginateJobs(){
+    const jobs = await getAllJobsNoPagination();
+    return res.json(jobs);
+  }
+
+  async function getPaginateJobs() {
     const page = parseInt(req.query.page as string, 10) || 1;
     const pageSize = parseInt(req.query.pageSize as string, 10) || 10;
 
-    // Fetch paginated jobs
-    const jobs = await prisma.job.findMany({
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-      include: {
-        customer: { select: { id: true, name: true } }, // Only fetch necessary customer details
-      },
-      orderBy: { createdAt: "desc" }, // Order by latest jobs
-    });
+    // Fetch jobs with pagination
+    const jobs = await paginateJobs(page, pageSize);
 
-    // Fetch total count for pagination metadata
-    const totalJobs = await prisma.job.count();
-    const totalPages = Math.ceil(totalJobs / pageSize);
+    // Get pagination metadata
+    const { totalJobs, totalPages } = await getPaginationMetadata(pageSize);
 
     return res.json({
       data: jobs,
@@ -40,10 +77,6 @@ const getAllJobs = async (
         totalPages,
       },
     });
-  } catch (error) {
-    console.error("Error in getAllJobs:", error);
-    next(new Error("Failed to retrieve jobs. Please try again later."));
-    return res.status(500).json({ error: "Internal server error" });
   }
 };
 
@@ -91,6 +124,7 @@ const createJob = async (
     const newJob = await prisma.job.create({
       data: {
         ...jobData, // Using spread to add the job data
+        uuid: uuidv4(),
         questionTemplates: {
           connect: Array.isArray(questionTemplateIds)
             ? questionTemplateIds.map((id: number) => ({ questionId: id })) // Ensure questionId is connected correctly
@@ -109,8 +143,11 @@ const createJob = async (
 
     return res.status(201).json(newJob);
   } catch (error) {
-    console.error("Error in createJob:", error);
-    next(new Error("Failed to create job. Please verify the input data."));
+    handlePrismaError(
+      error,
+      { message: "Failed to create job.", record: "job" },
+      next
+    );
     return res.status(500).json({ error: "Internal server error" });
   }
 };

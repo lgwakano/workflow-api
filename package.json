@@ -46,6 +46,7 @@
     "passport-local": "^1.0.0",
     "pg": "^8.11.3",
     "prisma": "^5.8.0",
-    "readme-md-generator": "^1.0.0"
+    "readme-md-generator": "^1.0.0",
+    "uuid": "^11.0.5"
   }
 }

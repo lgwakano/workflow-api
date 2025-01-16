@@ -69,6 +69,7 @@ model Job {
   id                Int                   @id @default(autoincrement())
   uuid              String                @unique
   name              String
+  deadline          DateTime?
   description       String
   customerId        Int
   customer          Customer              @relation(fields: [customerId], references: [id])

@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../prisma/prisma';
+import handlePrismaError from '../utils/errorHandling';
 
 // Get all customers
 const getAllCustomers = async (req: Request, res: Response, next: NextFunction): Promise<Response | undefined> => {
@@ -51,9 +52,11 @@ const createCustomer = async (req: Request, res: Response, next: NextFunction): 
 
     return res.status(201).json(newCustomer);
   } catch (error) {
-    console.error('Error in createCustomer:', error);
-    next(error instanceof Error ? error.message : 'Unknown error occurred while creating customer');
-    return res.status(500).json({ error: 'Internal server error' });
+    handlePrismaError(
+      error,
+      { message: "Failed to create customer.", record: "customer" },
+      next
+    );
   }
 };
 

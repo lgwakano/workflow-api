@@ -1,5 +1,5 @@
 import "dotenv/config";
-import express from "express";
+import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import session from "express-session";
 import passport from "./config/passport";
@@ -40,6 +40,15 @@ app.use("/customers", customerRoutes);
 app.use("/users", userRoutes);
 app.use("/questions", questionRoute);
 app.use("/jobs", jobRoutes); // Centralize all job-related routes under the /jobs base path
+
+
+// Error-handling middleware should be placed last
+app.use(
+  (err: Error, req: Request, res: Response, next: NextFunction) => {
+    console.error("Error: ", err.stack); // Log the error stack for debugging
+    res.status(500).json({ error: err.message || "An unexpected error occurred." });
+  }
+);
 
 app.listen(3001, () => {
   //TODO: port should be a env variable
