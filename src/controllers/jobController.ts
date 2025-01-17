@@ -43,17 +43,19 @@ const getAllJobs = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<Response> => {
+): Promise<Response | undefined> => {
   try {
     //return await getPaginateJobs();
     return await getNoPaginateJobs();
   } catch (error) {
-    console.error("Error in getAllJobs:", error);
-    next(new Error("Failed to retrieve jobs. Please try again later."));
-    return res.status(500).json({ error: "Internal server error" });
+    handlePrismaError(
+      error,
+      { message: "Failed to fetch all jobs.", record: "job" },
+      next
+    );
   }
 
-  async function getNoPaginateJobs(){
+  async function getNoPaginateJobs() {
     const jobs = await getAllJobsNoPagination();
     return res.json(jobs);
   }
@@ -85,7 +87,7 @@ const getJobById = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<Response> => {
+): Promise<Response | undefined> => {
   const id = validateId(req.params.id);
   if (!id) return res.status(400).json({ error: "Invalid job ID" });
 
@@ -107,9 +109,11 @@ const getJobById = async (
 
     return res.json(job);
   } catch (error) {
-    console.error(`Error in getJobById for id ${id}:`, error);
-    next(new Error(`Failed to retrieve job with ID ${id}.`));
-    return res.status(500).json({ error: "Internal server error" });
+    handlePrismaError(
+      error,
+      { message: `Failed to fetch job with id ${id}.`, record: "job" },
+      next
+    );
   }
 };
 
@@ -117,61 +121,65 @@ const createJob = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<Response> => {
+): Promise<Response | undefined> => {
   try {
-    const { questionTemplateIds, ...jobData } = req.body;
+    const { ...jobData } = req.body; // Get the job data, excluding questionTemplateIds
 
+    // 1. Create the job without the questionTemplates connection
     const newJob = await prisma.job.create({
       data: {
-        ...jobData, // Using spread to add the job data
+        ...jobData, // Other job data
         uuid: uuidv4(),
-        questionTemplates: {
-          connect: Array.isArray(questionTemplateIds)
-            ? questionTemplateIds.map((id: number) => ({ questionId: id })) // Ensure questionId is connected correctly
-            : [],
-        },
       },
       include: {
-        customer: { select: { id: true, name: true } },
-        questionTemplates: {
+        customer: {
           select: {
-            questionId: true, // Only return questionId (no title or answers)
-          },
+            id: true,
+            name: true
+          }
         },
       },
     });
 
-    return res.status(201).json(newJob);
+    // 2. Fetch all question templates from the database
+    const allQuestions = await prisma.question.findMany();
+
+    // 3. Map the question IDs to associate them with the job
+    const jobQuestionTemplates = allQuestions.map((question) => ({
+      jobId: newJob.id, // Link the new job's ID
+      questionId: question.id, // Use the question ID from the database
+    }));
+
+    // 4. Bulk create the JobQuestionTemplate records
+    await prisma.jobQuestionTemplate.createMany({
+      data: jobQuestionTemplates,
+    });
+
+    // 5. Return the newly created job without the associated questions
+    return res.status(201).json(newJob); // Only return the job's basic details
   } catch (error) {
-    handlePrismaError(
-      error,
-      { message: "Failed to create job.", record: "job" },
-      next
-    );
-    return res.status(500).json({ error: "Internal server error" });
+    handlePrismaError(error, { message: "Failed to create job.", record: "job" }, next);
   }
 };
+
 
 // Update an existing job using spread
 const updateJob = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<Response> => {
+): Promise<Response | undefined> => {
   const { id } = req.params;
-  const { questionTemplateIds, ...jobData } = req.body;
+  const { name, deadline, description, customerId } = req.body; // Remove questionTemplateIds
 
   try {
     const updatedJob = await prisma.job.update({
       where: { id: Number(id) },
       data: {
-        ...jobData, // Using spread to update the job data
-        questionTemplates: {
-          deleteMany: {}, // Remove existing relationships
-          connect: Array.isArray(questionTemplateIds)
-            ? questionTemplateIds.map((id: number) => ({ questionId: id })) // Ensure questionId is connected correctly
-            : [],
-        },
+        name, // Only update the fields that can be updated
+        deadline,
+        description,
+        customerId,
       },
       include: {
         customer: { select: { id: true, name: true } },
@@ -185,9 +193,11 @@ const updateJob = async (
 
     return res.json(updatedJob);
   } catch (error) {
-    console.error("Error in updateJob:", error);
-    next(new Error("Failed to update job. Please verify the input data."));
-    return res.status(500).json({ error: "Internal server error" });
+    handlePrismaError(
+      error,
+      { message: `Failed to update job with id ${id}.`, record: "job" },
+      next
+    );
   }
 };
 
@@ -196,7 +206,7 @@ const deleteJob = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<Response> => {
+): Promise<Response | undefined> => {
   const id = validateId(req.params.id);
   if (!id) return res.status(400).json({ error: "Invalid job ID" });
 
@@ -204,9 +214,11 @@ const deleteJob = async (
     await prisma.job.delete({ where: { id } });
     return res.json({ message: "Job deleted successfully" });
   } catch (error) {
-    console.error("Error in deleteJob:", error);
-    next(new Error("Failed to delete job. Please try again later."));
-    return res.status(500).json({ error: "Internal server error" });
+    handlePrismaError(
+      error,
+      { message: `Failed to delete job with id ${id}.`, record: "job" },
+      next
+    );
   }
 };
 

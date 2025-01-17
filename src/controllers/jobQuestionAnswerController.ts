@@ -1,13 +1,14 @@
 import { Request, Response, NextFunction } from "express";
 import prisma from "../prisma/prisma";
 import { validateId } from "../utils/validation";
+import handlePrismaError from "../utils/errorHandling";
 
 // Get answers for a specific job
 const getAnswersForJob = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<Response> => {
+): Promise<Response | undefined> => {
   const jobId = validateId(req.params.jobId);
   if (!jobId) return res.status(400).json({ error: "Invalid job ID" });
 
@@ -24,9 +25,11 @@ const getAnswersForJob = async (
 
     return res.json(answers);
   } catch (error) {
-    console.error(`Error in getAnswersForJob for job ID ${jobId}:`, error);
-    next(new Error(`Failed to retrieve answers for job ID ${jobId}.`));
-    return res.status(500).json({ error: "Internal server error" });
+    handlePrismaError(
+      error,
+      { message: `Failed to fetch Job Answers for Job ID ${jobId}.`, record: "job answer" },
+      next
+    );
   }
 };
 
@@ -35,7 +38,7 @@ const createAnswer = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<Response> => {
+): Promise<Response | undefined> => {
   const { jobId } = req.params; // Get jobId from URL parameters
 
   const { questionId, answer } = req.body;
@@ -46,20 +49,25 @@ const createAnswer = async (
       .json({ error: "Missing required fields: jobId, questionId, answer" });
   }
 
+   // Ensure answer is an array
+   const answerArray = Array.isArray(answer) ? answer : [answer];
+
   try {
     const newAnswer = await prisma.jobQuestionAnswer.create({
       data: {
         jobId: Number(jobId),
         questionId,
-        answer,
+        answer: answerArray,
       },
     });
 
     return res.status(201).json(newAnswer);
   } catch (error) {
-    console.error("Error in createAnswer:", error);
-    next(new Error("Failed to create answer. Please verify the input data."));
-    return res.status(500).json({ error: "Internal server error" });
+    handlePrismaError(
+      error,
+      { message: "Failed to create Job Answer.", record: "job answer" },
+      next
+    );
   }
 };
 
@@ -68,9 +76,11 @@ const updateAnswer = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<Response> => {
-  const id = validateId(req.params.jobId);
-  if (!id) return res.status(400).json({ error: "Invalid answer ID" });
+): Promise<Response | undefined> => {
+  const jobId = validateId(req.params.jobId);
+  const answerId = validateId(req.params.answerId);
+  if (!jobId) return res.status(400).json({ error: "Invalid Job ID" });
+  if (!answerId) return res.status(400).json({ error: "Invalid answer ID" });
 
   const { answer } = req.body;
 
@@ -80,15 +90,17 @@ const updateAnswer = async (
 
   try {
     const updatedAnswer = await prisma.jobQuestionAnswer.update({
-      where: { id },
+      where: { id: answerId },
       data: { answer },
     });
 
     return res.json(updatedAnswer);
   } catch (error) {
-    console.error(`Error in updateAnswer for ID ${id}:`, error);
-    next(new Error(`Failed to update answer with ID ${id}.`));
-    return res.status(500).json({ error: "Internal server error" });
+    handlePrismaError(
+      error,
+      { message: `Failed to update Job Answer for Answer ID ${answerId}.`, record: "job answer" },
+      next
+    );
   }
 };
 
@@ -97,7 +109,7 @@ const deleteAnswer = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<Response> => {
+): Promise<Response | undefined> => {
   const id = validateId(req.params.jobId);
   if (!id) return res.status(400).json({ error: "Invalid answer ID" });
 
@@ -111,9 +123,11 @@ const deleteAnswer = async (
       deletedAnswer,
     });
   } catch (error) {
-    console.error(`Error in deleteAnswer for ID ${id}:`, error);
-    next(new Error(`Failed to delete answer with ID ${id}.`));
-    return res.status(500).json({ error: "Internal server error" });
+    handlePrismaError(
+      error,
+      { message: `Failed to delete Job Answer for Job ID ${id}.`, record: "job answer" },
+      next
+    );
   }
 };
 

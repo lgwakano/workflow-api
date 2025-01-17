@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../prisma/prisma';
+import handlePrismaError from "../utils/errorHandling";
 import passport from 'passport';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
@@ -25,7 +26,7 @@ export async function authenticate(username: string, password: string, done: any
     }
     return done(null, user);
   } catch (error) {
-    return done(error);
+    handlePrismaError(error, { message: "Failed to authenticate user.", record: "user" }, done);
   }
 }
 
@@ -51,27 +52,32 @@ const login = async (req: Request, res: Response, next: NextFunction): Promise<R
       return res.json({ message: "Login successful", user, token });
     })(req, res, next); // Explicitly pass the request, response, and next to authenticate
   } catch (error) {
-    console.error('Error in Login:', error);
-    next(error instanceof Error ? error.message : 'Unknown error occurred'); // Propagate error to error handler
-    return res.status(500).json({ error: 'Internal server error' });
+    handlePrismaError(
+      error,
+      { message: "Failed on login.", record: "login" },
+      next
+    );
+    return undefined;
   }
 };
 
 
 // Get all users
-const getAllUsers = async (req: Request, res: Response, next: NextFunction): Promise<Response> => {
+const getAllUsers = async (req: Request, res: Response, next: NextFunction): Promise<Response | undefined> => {
   try {
     const users = await prisma.user.findMany();
     return res.json(users);
   } catch (error) {
-    console.error('Error in getAllUsers:', error);
-    next(error instanceof Error ? error.message : 'Unknown error occurred');
-    return res.status(500).json({ error: 'Internal server error' });
+    handlePrismaError(
+      error,
+      { message: "Failed to fetch all users.", record: "user" },
+      next
+    );
   }
 };
 
 // Get user by ID
-const getUserById = async (req: Request, res: Response, next: NextFunction): Promise<Response> => {
+const getUserById = async (req: Request, res: Response, next: NextFunction): Promise<Response | undefined> => {
   const { id } = req.params;
 
   try {
@@ -85,14 +91,16 @@ const getUserById = async (req: Request, res: Response, next: NextFunction): Pro
 
     return res.json(user);
   } catch (error) {
-    console.error(`Error in getUserById for id ${id}:`, error);
-    next(error instanceof Error ? error.message : `Unknown error occurred for user with id ${id}`);
-    return res.status(500).json({ error: 'Internal server error' });
+    handlePrismaError(
+      error,
+      { message: `Failed to fetch User with id ${id}.`, record: "user" },
+      next
+    );
   }
 };
 
 // Create a new user
-const createUser = async (req: Request, res: Response, next: NextFunction): Promise<Response> => {
+const createUser = async (req: Request, res: Response, next: NextFunction): Promise<Response | undefined> => {
   const { username, password } = req.body;
 
   try {
@@ -107,14 +115,16 @@ const createUser = async (req: Request, res: Response, next: NextFunction): Prom
 
     return res.status(201).json(newUser);
   } catch (error) {
-    console.error('Error in createUser:', error);
-    next(error instanceof Error ? error.message : 'Unknown error occurred while creating user');
-    return res.status(500).json({ error: 'Internal server error' });
+    handlePrismaError(
+      error,
+      { message: `Failed to create user.`, record: "user" },
+      next
+    );
   }
 };
 
 // Update an existing user
-const updateUser = async (req: Request, res: Response, next: NextFunction): Promise<Response> => {
+const updateUser = async (req: Request, res: Response, next: NextFunction): Promise<Response | undefined> => {
   const { id } = req.params;
 
   try {
@@ -133,14 +143,16 @@ const updateUser = async (req: Request, res: Response, next: NextFunction): Prom
 
     return res.json(updatedUser);
   } catch (error) {
-    console.error('Error in updateUser:', error);
-    next(error instanceof Error ? error.message : 'Unknown error occurred while updating user');
-    return res.status(500).json({ error: 'Internal server error' });
+    handlePrismaError(
+      error,
+      { message: `Failed to update user.`, record: "user" },
+      next
+    );
   }
 };
 
 // Delete a user
-const deleteUser = async (req: Request, res: Response, next: NextFunction): Promise<Response> => {
+const deleteUser = async (req: Request, res: Response, next: NextFunction): Promise<Response | undefined> => {
   const { id } = req.params;
 
   try {
@@ -150,9 +162,11 @@ const deleteUser = async (req: Request, res: Response, next: NextFunction): Prom
 
     return res.json({ message: "User deleted successfully" });
   } catch (error) {
-    console.error('Error in deleteUser:', error);
-    next(error instanceof Error ? error.message : 'Unknown error occurred while deleting user');
-    return res.status(500).json({ error: 'Internal server error' });
+    handlePrismaError(
+      error,
+      { message: `Failed to delete user.`, record: "user" },
+      next
+    );
   }
 };
 

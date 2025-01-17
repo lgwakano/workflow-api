@@ -6,7 +6,6 @@ import passport from "./config/passport";
 import userRoutes from "./routes/userRoutes";
 import customerRoutes from "./routes/customerRoute";
 import jobRoutes from "./routes/jobRoute";
-import jobQuestionAnswerRoute from "./routes/jobQuestionAnswerRoute";
 import questionRoute from "./routes/questionRoute";
 
 const app = express();

@@ -1,21 +1,34 @@
-import { Request, Response, NextFunction } from 'express';
-import prisma from '../prisma/prisma';
-import handlePrismaError from '../utils/errorHandling';
+import { Request, Response, NextFunction } from "express";
+import prisma from "../prisma/prisma";
+import handlePrismaError from "../utils/errorHandling";
 
 // Get all customers
-const getAllCustomers = async (req: Request, res: Response, next: NextFunction): Promise<Response | undefined> => {
+const getAllCustomers = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<Response | undefined> => {
   try {
     const customers = await prisma.customer.findMany();
     return res.json(customers);
   } catch (error) {
-    console.error('Error in getAllCustomers:', error);
-    next(error instanceof Error ? error.message : 'Unknown error occurred while retrieving customers');
-    return res.status(500).json({ error: 'Internal server error' });
+    handlePrismaError(
+      error,
+      {
+        message: "Failed to fetch all customers.",
+        record: "customer",
+      },
+      next
+    );
   }
 };
 
 // Get customer by ID
-const getCustomerById = async (req: Request, res: Response, next: NextFunction): Promise<Response | undefined> => {
+const getCustomerById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<Response | undefined> => {
   const { id } = req.params;
 
   try {
@@ -24,19 +37,30 @@ const getCustomerById = async (req: Request, res: Response, next: NextFunction):
     });
 
     if (!customer) {
-      return res.status(404).json({ error: 'Customer not found' });
+      const errorMessage = `Customer with id ${id} not found.`;
+      console.warn(errorMessage);
+      return res.status(404).json({ error: errorMessage });
     }
 
     return res.json(customer);
   } catch (error) {
-    console.error(`Error in getCustomerById for id ${id}:`, error);
-    next(error instanceof Error ? error.message : `Unknown error occurred for customer with id ${id}`);
-    return res.status(500).json({ error: 'Internal server error' });
+    handlePrismaError(
+      error,
+      {
+        message: `Failed to fetch customer with id ${id}.`,
+        record: "customer",
+      },
+      next
+    );
   }
 };
 
 // Create a new customer
-const createCustomer = async (req: Request, res: Response, next: NextFunction): Promise<Response | undefined> => {
+const createCustomer = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<Response | undefined> => {
   const { name, phone, email, address, contactName } = req.body;
 
   try {
@@ -61,7 +85,11 @@ const createCustomer = async (req: Request, res: Response, next: NextFunction): 
 };
 
 // Update an existing customer
-const updateCustomer = async (req: Request, res: Response, next: NextFunction): Promise<Response | undefined> => {
+const updateCustomer = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<Response | undefined> => {
   const { id } = req.params;
 
   try {
@@ -70,7 +98,7 @@ const updateCustomer = async (req: Request, res: Response, next: NextFunction): 
     });
 
     if (!existingCustomer) {
-      return res.status(404).json({ error: 'Customer not found' });
+      return res.status(404).json({ error: "Customer not found" });
     }
 
     const updatedCustomer = await prisma.customer.update({
@@ -80,14 +108,23 @@ const updateCustomer = async (req: Request, res: Response, next: NextFunction): 
 
     return res.json(updatedCustomer);
   } catch (error) {
-    console.error('Error in updateCustomer:', error);
-    next(error instanceof Error ? error.message : 'Unknown error occurred while updating customer');
-    return res.status(500).json({ error: 'Internal server error' });
+    handlePrismaError(
+      error,
+      {
+        message: `Failed to update customer with id ${id}.`,
+        record: "customer",
+      },
+      next
+    );
   }
 };
 
 // Delete a customer
-const deleteCustomer = async (req: Request, res: Response, next: NextFunction): Promise<Response | undefined> => {
+const deleteCustomer = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<Response | undefined> => {
   const { id } = req.params;
 
   try {
@@ -96,19 +133,30 @@ const deleteCustomer = async (req: Request, res: Response, next: NextFunction): 
     });
 
     if (!existingCustomer) {
-      return res.status(404).json({ error: 'Customer not found' });
+      return res.status(404).json({ error: "Customer not found" });
     }
 
     await prisma.customer.delete({
       where: { id: Number(id) },
     });
 
-    return res.json({ message: 'Customer deleted successfully' });
+    return res.json({ message: "Customer deleted successfully" });
   } catch (error) {
-    console.error('Error in deleteCustomer:', error);
-    next(error instanceof Error ? error.message : 'Unknown error occurred while deleting customer');
-    return res.status(500).json({ error: 'Internal server error' });
+    handlePrismaError(
+      error,
+      {
+        message: `Failed to delete customer with id ${id}.`,
+        record: "customer",
+      },
+      next
+    );
   }
 };
 
-export { getAllCustomers, getCustomerById, createCustomer, updateCustomer, deleteCustomer };
+export {
+  getAllCustomers,
+  getCustomerById,
+  createCustomer,
+  updateCustomer,
+  deleteCustomer,
+};
