@@ -1,111 +1,99 @@
 import { Request, Response, NextFunction } from "express";
 import prisma from "../prisma/prisma";
 import handlePrismaError from "../utils/errorHandling";
-
-// Controller method to get all questions for a specific job using JobQuestionTemplate
-const getQuestionsForJob = async (req: Request, res: Response, next: NextFunction): Promise<Response | undefined> => {
-  const { jobId } = req.params;
-
-  if (!jobId) {
-    return res.status(400).json({ error: 'Missing jobId in request' });
-  }
-
-  try {
-    // Fetch all JobQuestionTemplate entries related to the jobId
-    const jobQuestions = await prisma.jobQuestionTemplate.findMany({
-      where: {
-        jobId: Number(jobId),  // Ensure jobId is a number
-      },
-      include: {
-        question: true,  // Include the associated question data
-      },
-    });
-    console.log(jobQuestions);
-    // Extract and return the list of questions (from the `question` relation)
-    const questions = jobQuestions.map((jobQuestion) => jobQuestion.question);
-
-    return res.status(200).json(questions);
-  } catch (error) {
-    handlePrismaError(
-      error,
-      { message: "Failed to fetch Job Questions.", record: "job question template" },
-      next
-    );
-  }
-};
-
 import { validate as validateUUID } from 'uuid';
 
-const getQuestionsForJobByUUID = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<Response | undefined> => {
-  const { jobUuid } = req.params; // Extract jobUuid from params
-
-  // Validate jobUuid as a UUID
-  if (!jobUuid || !validateUUID(jobUuid)) {
-    return res.status(400).json({ error: 'Invalid or missing jobUuid in request' });
-  }
-
-  try {
+// Helper function to fetch job based on UUID or jobId
+const getJobByIdentifier = async (jobIdentifier: string) => {
+  let job;
+  if (validateUUID(jobIdentifier)) {
     // Fetch the job by its UUID
-    const job = await prisma.job.findUnique({
+    job = await prisma.job.findUnique({
       where: {
-        uuid: jobUuid, // Match by UUID
+        uuid: jobIdentifier,
       },
       select: {
         id: true, // Only fetch the job ID
       },
     });
+  } else {
+    // If it's not a valid UUID, assume it's a jobId (numeric)
+    const jobId = parseInt(jobIdentifier);
+    if (isNaN(jobId)) {
+      throw new Error('Invalid Job ID format');
+    }
+
+    job = await prisma.job.findUnique({
+      where: {
+        id: jobId, // Use the jobId to fetch the job
+      },
+      select: {
+        id: true, // Only fetch the job ID
+      },
+    });
+  }
+  return job;
+};
+
+// Helper function to fetch questions for a specific job
+const getJobQuestions = async (jobId: number) => {
+  const jobQuestions = await prisma.jobQuestionTemplate.findMany({
+    where: {
+      jobId, // Use the retrieved job ID
+    },
+    include: {
+      question: {
+        include: {
+          options: true,
+        },
+      },
+    },
+  });
+
+  // Preprocess the questions to simplify the structure
+  return jobQuestions.map((jobQuestion) => {
+    const question = jobQuestion.question;
+    return {
+      id: question.id,
+      type: question.type,
+      text: question.text,
+      options: question.options.map((option) => option.text), // Extract only the text field
+    };
+  });
+};
+
+// Controller method to get all questions for a specific job
+const getQuestionsForJob = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<Response | undefined> => {
+  const { jobIdentifier } = req.params; // Extract jobIdentifier from params (either jobId or jobUuid)
+
+  if (!jobIdentifier) {
+    return res.status(400).json({ error: 'Job identifier is required' });
+  }
+
+  try {
+    // Fetch the job by identifier (either UUID or jobId)
+    const job = await getJobByIdentifier(jobIdentifier);
 
     // If no job is found, return an error
     if (!job) {
-      return res.status(404).json({ error: 'Job not found' });
+      return res.status(404).json({ error: `Job with identifier ${jobIdentifier} not found` });
     }
 
-    // Fetch the JobQuestionTemplates associated with the job ID
-    const jobQuestions = await prisma.jobQuestionTemplate.findMany({
-      where: {
-        jobId: job.id, // Use the retrieved job ID
-      },
-      include: {
-        question: {
-          include: {
-            options: true,
-          },
-        },
-      },
-    });
-
-    // Extract and return the list of questions
-    //const questions = jobQuestions.map((jobQuestion) => jobQuestion.question);
-
-    // Preprocess to convert options into a simpler array of strings
-    const questions = jobQuestions.map((jobQuestion) => {
-      const question = jobQuestion.question;
-      return {
-        id: question.id,
-        type: question.type,
-        text: question.text,
-        options: question.options.map((option) => option.text), // Extract only the text field
-      };
-    });
+    // Fetch the questions for the job
+    const questions = await getJobQuestions(job.id);
 
     return res.status(200).json(questions);
   } catch (error) {
     handlePrismaError(
       error,
-      { message: `Failed to fetch Job Questions by uuid ${jobUuid}.`, record: 'job question template' },
+      { message: `Failed to fetch Job Questions for identifier ${jobIdentifier}.`, record: 'job question template' },
       next
     );
   }
 };
 
-
-// You can add other methods here, such as:
-// - createQuestionTemplate
-// - updateQuestionTemplate
-// - deleteQuestionTemplate
-
-export { getQuestionsForJob, getQuestionsForJobByUUID };
+export { getQuestionsForJob };

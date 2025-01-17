@@ -78,9 +78,9 @@ const updateAnswer = async (
   next: NextFunction
 ): Promise<Response | undefined> => {
   const jobId = validateId(req.params.jobId);
-  const answerId = validateId(req.params.answerId);
+  const questionId = validateId(req.params.questionId);
   if (!jobId) return res.status(400).json({ error: "Invalid Job ID" });
-  if (!answerId) return res.status(400).json({ error: "Invalid answer ID" });
+  if (!questionId) return res.status(400).json({ error: "Invalid question ID" });
 
   const { answer } = req.body;
 
@@ -89,8 +89,19 @@ const updateAnswer = async (
   }
 
   try {
+    const lastAnswer = await prisma.jobQuestionAnswer.findFirst({
+      where: { jobId, questionId },
+      orderBy: {
+        id: 'desc',
+      },
+    });
+
+    if (!lastAnswer) {
+      return res.status(404).json({ error: "Answer not found" });
+    }
+
     const updatedAnswer = await prisma.jobQuestionAnswer.update({
-      where: { id: answerId },
+      where: { id: lastAnswer.id },
       data: { answer },
     });
 
@@ -98,7 +109,7 @@ const updateAnswer = async (
   } catch (error) {
     handlePrismaError(
       error,
-      { message: `Failed to update Job Answer for Answer ID ${answerId}.`, record: "job answer" },
+      { message: `Failed to update Job Answer for Question ID ${questionId}.`, record: "job answer" },
       next
     );
   }
@@ -110,22 +121,38 @@ const deleteAnswer = async (
   res: Response,
   next: NextFunction
 ): Promise<Response | undefined> => {
-  const id = validateId(req.params.jobId);
-  if (!id) return res.status(400).json({ error: "Invalid answer ID" });
+  const jobId = validateId(req.params.jobId);
+  const questionId = validateId(req.params.questionId);
+
+  if (!jobId) return res.status(400).json({ error: "Invalid Job ID" });
+  if (!questionId) return res.status(400).json({ error: "Invalid question ID" });
 
   try {
+    // Fetch the most recent answer based on the createdAt timestamp or id
+    const lastAnswer = await prisma.jobQuestionAnswer.findFirst({
+      where: { jobId, questionId },
+      orderBy: {
+        id: 'desc',
+      },
+    });
+
+    if (!lastAnswer) {
+      return res.status(404).json({ error: "Answer not found or already deleted" });
+    }
+
+    // Delete the most recent answer
     const deletedAnswer = await prisma.jobQuestionAnswer.delete({
-      where: { id },
+      where: { id: lastAnswer.id },
     });
 
     return res.json({
-      message: `Answer with ID ${id} has been deleted.`,
+      message: `Answer with ID ${lastAnswer.id} has been deleted.`,
       deletedAnswer,
     });
   } catch (error) {
     handlePrismaError(
       error,
-      { message: `Failed to delete Job Answer for Job ID ${id}.`, record: "job answer" },
+      { message: `Failed to delete Job Answer for Job ID ${jobId}.`, record: "job answer" },
       next
     );
   }

@@ -12,7 +12,7 @@ import {
   updateAnswer,
   deleteAnswer,
 } from "../controllers/jobQuestionAnswerController";
-import { getQuestionsForJob, getQuestionsForJobByUUID } from "../controllers/jobQuestionTemplateController";
+import { getQuestionsForJob } from "../controllers/jobQuestionTemplateController";
 
 const router = express.Router();
 
@@ -24,10 +24,9 @@ router.delete("/:id", deleteJob);
 
 router.get("/:jobId/answers", getAnswersForJob);
 router.post("/:jobId/answers", createAnswer);
-router.put("/:jobId/answers/:answerId", updateAnswer);
-router.delete("/:jobId/answers/:answerId", deleteAnswer);
+router.put("/:jobId/answers/:questionId", updateAnswer);
+router.delete("/:jobId/answers/:questionId", deleteAnswer);
 
-router.get("/:jobUuid/questions", getQuestionsForJobByUUID);
-router.get("/:jobId/questions", getQuestionsForJob);
+router.get("/:jobIdentifier/questions", getQuestionsForJob);
 
 export default router;
