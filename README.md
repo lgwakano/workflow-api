@@ -39,6 +39,18 @@ npx prisma studio
 ```
 
 
+## Changing DB Schema - Prisma Commands
+1 - Development command for actively changing schema.
+```sh
+npx prisma migrate dev --name your_migration_name
+```
+
+2 - Generates Prisma Client based on Prisma Schema
+```sh
+npx prisma generate
+```
+
+
 ## Populate DB
 ```sh
 npm run seed

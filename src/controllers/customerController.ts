@@ -9,7 +9,11 @@ const getAllCustomers = async (
   next: NextFunction
 ): Promise<Response | undefined> => {
   try {
-    const customers = await prisma.customer.findMany();
+    const customers = await prisma.customer.findMany({
+      orderBy:{
+        name:'asc',
+      }
+    });
     return res.json(customers);
   } catch (error) {
     handlePrismaError(

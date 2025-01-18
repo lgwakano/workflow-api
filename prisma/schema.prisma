@@ -47,10 +47,10 @@ enum Role {
 model Customer {
   id          Int    @id @default(autoincrement())
   name        String
-  phone       String
-  email       String @unique
-  address     String
-  contactName String
+  phone       String?
+  email       String? @unique
+  address     String?
+  contactName String?
   jobs        Job[] // Link to jobs associated with the customer
 }
 
