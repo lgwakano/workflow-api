@@ -8,7 +8,7 @@ import jwt from 'jsonwebtoken';
 // Passport local use
 export async function authenticate(username: string, password: string, done: any) {
   try {
-    console.log("authenticate! ", username, password);
+    //console.log("authenticate! ", username, password);
 
     const user = await prisma.user.findFirst({
       where: {

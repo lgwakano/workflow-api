@@ -123,13 +123,15 @@ const createJob = async (
   next: NextFunction
 ): Promise<Response | undefined> => {
   try {
-    const { ...jobData } = req.body; // Get the job data, excluding questionTemplateIds
-
+    const { deadline, ...jobData } = req.body; // Get the job data, excluding questionTemplateIds
+    // Convert ISO string deadline to Date object if it's provided
+    const formattedDeadline = deadline ? new Date(deadline) : null;
     // 1. Create the job without the questionTemplates connection
     const newJob = await prisma.job.create({
       data: {
         ...jobData, // Other job data
         uuid: uuidv4(),
+        deadline: formattedDeadline,
       },
       include: {
         customer: {
