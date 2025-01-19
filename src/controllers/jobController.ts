@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import prisma from "../prisma/prisma";
 import handlePrismaError from "../utils/errorHandling";
-import { v4 as uuidv4 } from "uuid";
+import { v4 as uuidv4, validate as validateUUID } from "uuid";
 
 // Utility function for validating ID
 const validateId = (id: string): number | null => {
@@ -88,17 +88,30 @@ const getJobById = async (
   res: Response,
   next: NextFunction
 ): Promise<Response | undefined> => {
-  const id = validateId(req.params.id);
-  if (!id) return res.status(400).json({ error: "Invalid job ID" });
+  const { id } = req.params;
+
+  // Check if the id is a valid UUID
+  const isUuidValid = validateUUID(id);
+  let whereClause;
+
+  if (isUuidValid) {
+    whereClause = { uuid: id }; // If it's a valid UUID, query by uuid
+  } else {
+    // If it's not a UUID, validate it as a numeric job ID
+    const validatedId = validateId(id);
+    if (!validatedId) {
+      return res.status(400).json({ error: "Invalid job ID" });
+    }
+    whereClause = { id: validatedId }; // If it's a valid numeric ID, query by id
+  }
 
   const includeQuestions = req.query.includeQuestions === "true"; // Check for query parameter
 
   try {
     const job = await prisma.job.findUnique({
-      where: { id },
+      where: whereClause,
       include: {
         customer: { select: { id: true, name: true } },
-        // Conditionally include questionTemplates if requested
         questionTemplates: includeQuestions
           ? { select: { id: true, question: { select: { text: true } } } }
           : false,
@@ -109,11 +122,7 @@ const getJobById = async (
 
     return res.json(job);
   } catch (error) {
-    handlePrismaError(
-      error,
-      { message: `Failed to fetch job with id ${id}.`, record: "job" },
-      next
-    );
+    handlePrismaError(error, { message: `Failed to fetch job with id or uuid ${id}.`, record: "job" }, next);
   }
 };
 
