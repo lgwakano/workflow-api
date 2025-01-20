@@ -72,7 +72,7 @@ model Job {
   deadline          DateTime?
   description       String
   customerId        Int
-  customer          Customer              @relation(fields: [customerId], references: [id])
+  customer          Customer              @relation(fields: [customerId], references: [id], onDelete: Cascade)
   questionTemplates JobQuestionTemplate[] // Questions linked to this job template
   answers           JobQuestionAnswer[] // Answers for the job
   createdAt         DateTime              @default(now()) // Automatically set to the current time when the job is created
