@@ -2,6 +2,21 @@ import { Request, Response, NextFunction } from "express";
 import prisma from "../prisma/prisma";
 import { validateId } from "../utils/validation";
 import handlePrismaError from "../utils/errorHandling";
+import { getJobByIdentifier } from "../utils/job/getJobByIdentifier";
+
+
+// Helper function to fetch answers for a specific job
+const getJobAnswers = async (jobId: number) => {
+  return await prisma.jobQuestionAnswer.findMany({
+    where: { jobId },
+    select: {
+      id: true,
+      jobId: true,
+      questionId: true,
+      answer: true,
+    },
+  });
+};
 
 // Get answers for a specific job
 const getAnswersForJob = async (
@@ -9,25 +24,29 @@ const getAnswersForJob = async (
   res: Response,
   next: NextFunction
 ): Promise<Response | undefined> => {
-  const jobId = validateId(req.params.jobId);
-  if (!jobId) return res.status(400).json({ error: "Invalid job ID" });
+  const { jobIdentifier } = req.params;
+
+  if (!jobIdentifier) {
+    return res.status(400).json({ error: 'Job identifier is required' });
+  }
 
   try {
-    const answers = await prisma.jobQuestionAnswer.findMany({
-      where: { jobId },
-      select: {
-        id: true,
-        jobId: true,
-        questionId: true,
-        answer: true,
-      },
-    });
+    // Fetch the job by identifier (either UUID or jobId)
+    const job = await getJobByIdentifier(jobIdentifier);
 
-    return res.json(answers);
+    // If no job is found, return an error
+    if (!job) {
+      return res.status(404).json({ error: `Job with identifier ${jobIdentifier} not found` });
+    }
+
+    // Fetch the answers for the job
+    const answers = await getJobAnswers(job.id);
+
+    return res.status(200).json(answers);
   } catch (error) {
     handlePrismaError(
       error,
-      { message: `Failed to fetch Job Answers for Job ID ${jobId}.`, record: "job answer" },
+      { message: `Failed to fetch Job Answers for identifier ${jobIdentifier}.`, record: 'job question answer' },
       next
     );
   }

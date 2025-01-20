@@ -50,6 +50,18 @@ npx prisma migrate dev --name your_migration_name
 npx prisma generate
 ```
 
+3 - Check Prisma Schema Migration Status
+```sh
+npx prisma migrate status
+```
+
+4 - Deploy Prisma Schema Migration Production
+ - Change the .env db variables to connect to production
+ - execute the migrate deploy command:
+```sh
+npx prisma migrate deploy
+```
+
 
 ## Populate DB
 ```sh

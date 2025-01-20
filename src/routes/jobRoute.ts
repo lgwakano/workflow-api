@@ -22,7 +22,7 @@ router.post("/", createJob);
 router.put("/:id", updateJob);
 router.delete("/:id", deleteJob);
 
-router.get("/:jobId/answers", getAnswersForJob);
+router.get("/:jobIdentifier/answers", getAnswersForJob);
 router.post("/:jobId/answers", createAnswer);
 router.put("/:jobId/answers/:questionId", updateAnswer);
 router.delete("/:jobId/answers/:questionId", deleteAnswer);

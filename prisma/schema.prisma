@@ -83,9 +83,9 @@ model Job {
 model JobQuestionTemplate {
   id         Int      @id @default(autoincrement())
   jobId      Int // Foreign key to Job
-  job        Job      @relation(fields: [jobId], references: [id])
+  job        Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
   questionId Int // Foreign key to Question template
-  question   Question @relation(fields: [questionId], references: [id])
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 }
 
 // JobQuestionAnswer: records the answers for each job-question pair
@@ -94,8 +94,8 @@ model JobQuestionAnswer {
   jobId      Int // Foreign key to Job
   questionId Int // Foreign key to Question
   answer     String[] // The selected answer(s) (can be a single string or an array for checkboxes)
-  job        Job      @relation(fields: [jobId], references: [id])
-  question   Question @relation(fields: [questionId], references: [id])
+  job        Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 }
 
 // Options for multiple-choice questions
@@ -103,7 +103,7 @@ model Option {
   id         Int      @id @default(autoincrement())
   text       String // Option text (e.g., "Wood", "Steel")
   questionId Int // The ID of the related Question
-  question   Question @relation(fields: [questionId], references: [id])
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 }
 
 enum QuestionType {
