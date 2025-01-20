@@ -16,6 +16,11 @@ const getJobQuestions = async (jobId: number) => {
         },
       },
     },
+    orderBy:{
+      question:{
+        order: 'asc'
+      }
+    },
   });
 
   // Preprocess the questions to simplify the structure
