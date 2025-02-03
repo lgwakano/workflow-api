@@ -7,6 +7,8 @@ import userRoutes from "./routes/userRoutes";
 import customerRoutes from "./routes/customerRoute";
 import jobRoutes from "./routes/jobRoute";
 import questionRoute from "./routes/questionRoute";
+import workerAssignmentRoute from "./routes/workerAssignmentRoute";
+import workerRoute from "./routes/workerRoute";
 
 const app = express();
 const corsOptions = require("cors");
@@ -39,6 +41,8 @@ app.use("/customers", customerRoutes);
 app.use("/users", userRoutes);
 app.use("/questions", questionRoute);
 app.use("/jobs", jobRoutes); // Centralize all job-related routes under the /jobs base path
+app.use("/worker-assignments", workerAssignmentRoute);
+app.use("/workers", workerRoute);
 
 
 // Error-handling middleware should be placed last

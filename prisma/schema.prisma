@@ -45,7 +45,7 @@ enum Role {
 
 // The Customer model with basic customer info
 model Customer {
-  id          Int    @id @default(autoincrement())
+  id          Int     @id @default(autoincrement())
   name        String
   phone       String?
   email       String? @unique
@@ -78,15 +78,16 @@ model Job {
   answers           JobQuestionAnswer[] // Answers for the job
   createdAt         DateTime              @default(now()) // Automatically set to the current time when the job is created
   updatedAt         DateTime              @default(now()) @updatedAt // Automatically updated to the current time on each update
+  workerAssignments WorkerAssignment[]
 }
 
 // A join table that links jobs to question templates
 model JobQuestionTemplate {
-  id         Int      @id @default(autoincrement())
-  jobId      Int // Foreign key to Job
-  job        Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  questionId Int // Foreign key to Question template
-  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  id                Int                @id @default(autoincrement())
+  jobId             Int // Foreign key to Job
+  job               Job                @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  questionId        Int // Foreign key to Question template
+  question          Question           @relation(fields: [questionId], references: [id], onDelete: Cascade)
 }
 
 // JobQuestionAnswer: records the answers for each job-question pair
@@ -112,4 +113,25 @@ enum QuestionType {
   radio // Single-choice question (requires options)
   checkbox // Multiple-choice question (requires options)
   select // Drop-down select option (requires options)
+}
+
+model Worker {
+  id                 Int              @id @default(autoincrement())
+  name               String?
+  email              String?
+  phone              String?
+  dbd                DateTime?
+  workerAssignmentId Int
+  workerAssignment   WorkerAssignment @relation(fields: [workerAssignmentId], references: [id], onDelete: Cascade)
+}
+
+model WorkerAssignment {
+  id                    Int                 @id @default(autoincrement())
+  position              String
+  numberOfWorkers       Int
+  workers               Worker[]
+  jobId Int
+  job   Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
 }
