@@ -4,7 +4,6 @@ import { validateId } from "../utils/validation";
 import handlePrismaError from "../utils/errorHandling";
 import { getJobByIdentifier } from "../utils/job/getJobByIdentifier";
 
-
 // Helper function to fetch answers for a specific job
 const getJobAnswers = async (jobId: number) => {
   return await prisma.jobQuestionAnswer.findMany({
@@ -27,7 +26,7 @@ const getAnswersForJob = async (
   const { jobIdentifier } = req.params;
 
   if (!jobIdentifier) {
-    return res.status(400).json({ error: 'Job identifier is required' });
+    return res.status(400).json({ error: "Job identifier is required" });
   }
 
   try {
@@ -36,7 +35,9 @@ const getAnswersForJob = async (
 
     // If no job is found, return an error
     if (!job) {
-      return res.status(404).json({ error: `Job with identifier ${jobIdentifier} not found` });
+      return res
+        .status(404)
+        .json({ error: `Job with identifier ${jobIdentifier} not found` });
     }
 
     // Fetch the answers for the job
@@ -46,7 +47,10 @@ const getAnswersForJob = async (
   } catch (error) {
     handlePrismaError(
       error,
-      { message: `Failed to fetch Job Answers for identifier ${jobIdentifier}.`, record: 'job question answer' },
+      {
+        message: `Failed to fetch Job Answers for identifier ${jobIdentifier}.`,
+        record: "job question answer",
+      },
       next
     );
   }
@@ -62,14 +66,18 @@ const createAnswer = async (
 
   const { questionId, answer } = req.body;
 
-  if (!jobId || !questionId || !answer) {
+  if (!jobId || !questionId || answer === undefined || answer === null) {
     return res
       .status(400)
       .json({ error: "Missing required fields: jobId, questionId, answer" });
   }
 
-   // Ensure answer is an array
-   const answerArray = Array.isArray(answer) ? answer : [answer];
+  if (answer === "") {
+    return res.status(204).json({ error: "Answer field cannot be empty" });
+  }
+
+  // Ensure answer is an array
+  const answerArray = Array.isArray(answer) ? answer : [answer];
 
   try {
     const newAnswer = await prisma.jobQuestionAnswer.create({
@@ -99,7 +107,8 @@ const updateAnswer = async (
   const jobId = validateId(req.params.jobId);
   const questionId = validateId(req.params.questionId);
   if (!jobId) return res.status(400).json({ error: "Invalid Job ID" });
-  if (!questionId) return res.status(400).json({ error: "Invalid question ID" });
+  if (!questionId)
+    return res.status(400).json({ error: "Invalid question ID" });
 
   const { answer } = req.body;
 
@@ -111,7 +120,7 @@ const updateAnswer = async (
     const lastAnswer = await prisma.jobQuestionAnswer.findFirst({
       where: { jobId, questionId },
       orderBy: {
-        id: 'desc',
+        id: "desc",
       },
     });
 
@@ -128,7 +137,10 @@ const updateAnswer = async (
   } catch (error) {
     handlePrismaError(
       error,
-      { message: `Failed to update Job Answer for Question ID ${questionId}.`, record: "job answer" },
+      {
+        message: `Failed to update Job Answer for Question ID ${questionId}.`,
+        record: "job answer",
+      },
       next
     );
   }
@@ -144,19 +156,22 @@ const deleteAnswer = async (
   const questionId = validateId(req.params.questionId);
 
   if (!jobId) return res.status(400).json({ error: "Invalid Job ID" });
-  if (!questionId) return res.status(400).json({ error: "Invalid question ID" });
+  if (!questionId)
+    return res.status(400).json({ error: "Invalid question ID" });
 
   try {
     // Fetch the most recent answer based on the createdAt timestamp or id
     const lastAnswer = await prisma.jobQuestionAnswer.findFirst({
       where: { jobId, questionId },
       orderBy: {
-        id: 'desc',
+        id: "desc",
       },
     });
 
     if (!lastAnswer) {
-      return res.status(404).json({ error: "Answer not found or already deleted" });
+      return res
+        .status(404)
+        .json({ error: "Answer not found or already deleted" });
     }
 
     // Delete the most recent answer
@@ -171,7 +186,10 @@ const deleteAnswer = async (
   } catch (error) {
     handlePrismaError(
       error,
-      { message: `Failed to delete Job Answer for Job ID ${jobId}.`, record: "job answer" },
+      {
+        message: `Failed to delete Job Answer for Job ID ${jobId}.`,
+        record: "job answer",
+      },
       next
     );
   }

@@ -65,7 +65,6 @@ const createWorkerAssignment = async (req: Request, res: Response, next: NextFun
 
 const updateWorkerAssignment = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    console.log("updateWorkerAssignment");
     const { id } = req.params; // Worker assignment ID
     const { position, numberOfWorkers, workers } = req.body; // Workers to update
 

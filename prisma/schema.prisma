@@ -113,6 +113,7 @@ enum QuestionType {
   radio // Single-choice question (requires options)
   checkbox // Multiple-choice question (requires options)
   select // Drop-down select option (requires options)
+  date
 }
 
 model Worker {
