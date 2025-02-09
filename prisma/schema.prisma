@@ -114,6 +114,7 @@ enum QuestionType {
   checkbox // Multiple-choice question (requires options)
   select // Drop-down select option (requires options)
   date
+  textarea
 }
 
 model Worker {
