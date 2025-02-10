@@ -9,6 +9,7 @@ import jobRoutes from "./routes/jobRoute";
 import questionRoute from "./routes/questionRoute";
 import workerAssignmentRoute from "./routes/workerAssignmentRoute";
 import workerRoute from "./routes/workerRoute";
+import notificationRoute from "./routes/notificationRoute";
 
 const app = express();
 const corsOptions = require("cors");
@@ -43,6 +44,7 @@ app.use("/questions", questionRoute);
 app.use("/jobs", jobRoutes); // Centralize all job-related routes under the /jobs base path
 app.use("/worker-assignments", workerAssignmentRoute);
 app.use("/workers", workerRoute);
+app.use("/notifications", notificationRoute);
 
 
 // Error-handling middleware should be placed last

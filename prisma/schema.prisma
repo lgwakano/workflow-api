@@ -83,11 +83,11 @@ model Job {
 
 // A join table that links jobs to question templates
 model JobQuestionTemplate {
-  id                Int                @id @default(autoincrement())
-  jobId             Int // Foreign key to Job
-  job               Job                @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  questionId        Int // Foreign key to Question template
-  question          Question           @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  id         Int      @id @default(autoincrement())
+  jobId      Int // Foreign key to Job
+  job        Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  questionId Int // Foreign key to Question template
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 }
 
 // JobQuestionAnswer: records the answers for each job-question pair
@@ -128,12 +128,21 @@ model Worker {
 }
 
 model WorkerAssignment {
-  id                    Int                 @id @default(autoincrement())
-  position              String
-  numberOfWorkers       Int
-  workers               Worker[]
-  jobId Int
-  job   Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  createdAt             DateTime            @default(now())
-  updatedAt             DateTime            @updatedAt
+  id              Int      @id @default(autoincrement())
+  position        String
+  numberOfWorkers Int
+  workers         Worker[]
+  jobId           Int
+  job             Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  text      String
+  link      String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
